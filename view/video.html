@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+      <title>main Page</title>
+
+<!--      &lt;!&ndash; Insert this line above script imports  &ndash;&gt;-->
+<!--      <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>-->
+
+
+
+<!--      <script src="https://code.jquery.com/jquery-3.5.0.js"></script>-->
+<!--      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>-->
+<!--      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>-->
+
+<!--      <script defer src="https://unpkg.com/peerjs@1.2.0/dist/peerjs.min.js"></script>-->
+    <script  src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+
+
+
+  </head>
+
+  <body>
+
+  <h1> video window</h1>
+    <div id="video-grid"> </div>
+
+  <div id="test"></div>
+  </body>
+
+
+<script>
+  const io = require('socket.io-client');
+  var socket = io("https://wechats3.herokuapp.com");
+
+  const ipc = require('electron').ipcRenderer;
+  const videoGrid = document.getElementById('video-grid')
+
+  var peer = new Peer();
+
+  const myVideo = document.createElement('video')
+  myVideo.muted = true
+  myVideo.crossOrigin = 'anonymous';
+  const peers = {}
+
+  peer.on('open', id => {
+    socket.emit('join-room', id);
+  })
+
+
+  var getUserMedia = navigator.mediaDevices.getUserMedia || navigator.mediaDevices.webkitGetUserMedia || navigator.mediaDevices.mozGetUserMedia;
+
+  getUserMedia({
+    video: true,
+    audio: true
+  }).then(stream => {
+    addVideoStream(myVideo, stream)
+
+    peer.on('call', call => {
+      call.answer(stream)
+      const video = document.createElement('video')
+      call.on('stream', userVideoStream => {
+        addVideoStream(video, userVideoStream)
+      })
+    })
+
+    socket.on('user-connected', userId => {
+      console.log("COnnected inside")
+      connectToNewUser(userId, stream)
+    })
+  })
+
+
+
+
+//   ----------------------------------------
+
+  function connectToNewUser(userId, stream) {
+    const call = peer.call(userId, stream)
+    const video = document.createElement('video')
+    call.on('stream', userVideoStream => {
+      addVideoStream(video, userVideoStream)
+    })
+    call.on('close', () => {
+      video.remove()
+    })
+
+    peers[userId] = call
+  }
+
+  function addVideoStream(video, stream) {
+    video.srcObject = stream
+    video.addEventListener('loadedmetadata', () => {
+      video.play()
+    })
+    videoGrid.append(video)
+  }
+
+
+
+</script>
+
+
+</html>

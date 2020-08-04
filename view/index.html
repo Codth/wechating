@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+      <title>main Page</title>
+
+      <!-- Insert this line above script imports  -->
+      <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+
+
+      <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+
+      <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+
+    <!-- Vue component template  -->
+      <script src="bubble_template.js"></script>
+      <script src="listUnread_template.js"></script>
+      <script src="util.js"></script>
+
+      <link rel="stylesheet" href="style.css"> </link>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+      <script src="https://kit.fontawesome.com/4510a57681.js" crossorigin="anonymous"></script>
+
+      <!-- Insert this line after script imports -->
+      <script>if (window.module) module = window.module;</script>
+
+  </head>
+
+
+
+  <body style=" height: 100%; width: 100%">
+
+  <div id="app" style=" height: 100%">
+      <div id= "window" class="part" style="padding-right: 15px; padding-bottom: 11px">
+          <div class="row part">
+              <div class="col-3 part"  id="list" style="background: white;padding-right: 0px;" >
+                  <div class="name-card " style="text-align: center">
+                      <h2>{{me}}</h2>
+                  </div>
+
+                  <div  class="mainList" >
+                      <div class="name-card" v-for="item in Maintain_msg" v-on:click="select($event, item.name)">
+                          <unread
+                                  v-bind:number = item.numOfUnread
+                                  v-bind:name = "item.name"
+                          ></unread>
+                      </div>
+                  </div>
+
+              </div>
+
+
+              <div class="col-9" style="padding: 0px; background: lightgray">
+
+                  <div id="header">
+                      <h3>
+                          {{cur_selection}}
+                      </h3>
+                  </div>
+
+
+                  <div id="content">
+                      <bubble
+                         v-for="post in window_msg"
+                         v-bind:key="post.id"
+                         v-bind:id="post.id"
+                         v-bind:sender="post.from"
+                         v-bind:msg="post.msg"
+                         v-bind:me="me"
+                         @click="point"
+                      ></bubble>
+                  </div>
+
+
+                  <div id = "textbox">
+                      <button v-on:click="video"> <i class="fas fa-video" style="color: cornflowerblue"></i></button>
+                      <button v-on:click="testing"> test</button>
+                      <textarea class="form-control" id="textArea" rows="3" v-model="message"></textarea>
+                      <button type="button" class="btn btn-success" v-on:click="send">Enter</button>
+                  </div>
+
+
+              </div>
+          </div>
+
+      </div>
+  </div>
+
+
+
+
+    <script src="../renderer.js"></script>
+
+  <script>
+
+      const ipc = require('electron').ipcRenderer;
+
+      ipc.on('msg_FromOther', (event,bundle) => {
+          const msg = vue.Maintain_msg;
+
+          for (let i = 0; i < msg.length; i++) {
+              if(msg[i].name == bundle.sender){
+                  const content = msg[i].content;
+
+                  if(content.length != 0){
+                      const lastID = content[content.length-1].id;
+                      const temp = {
+                          id: parseInt(lastID) + 1,
+                          from: bundle.sender,
+                          msg: bundle.msg,
+                          status: false
+                      };
+                      vue.Maintain_msg[i].content.push(temp);
+                  }else{
+                      const temp = {
+                          id: 1,
+                          from: bundle.sender,
+                          msg: bundle.msg,
+                          status: false
+                      };
+                      vue.Maintain_msg[i].content.push(temp);
+                  }
+
+                  console.log(this.cur_selection);
+                  console.log(bundle.sender)
+                  if(vue.cur_selection != bundle.sender)   vue.Maintain_msg[i].numOfUnread = parseInt(vue.Maintain_msg[i].numOfUnread) + 1;
+
+                  break;
+              }
+          }
+      });
+
+      ipc.on('msg_FromMe', (event,bundle) => {
+          const msg = vue.Maintain_msg;
+          for (let i = 0; i < msg.length; i++) {
+              if(msg[i].name == bundle.to){
+                  const content = msg[i].content;
+                  console.log(content)
+                  if(content.length != 0){
+                      const lastID = content[content.length-1].id;
+                      const temp = {
+                          id: parseInt(lastID) + 1,
+                          from: bundle.sender,
+                          msg: bundle.msg
+                      };
+                      msg[i].content.push(temp);
+                  }else{
+                      const temp = {
+                          id: 1,
+                          from: bundle.sender,
+                          msg: bundle.msg
+                      };
+                      msg[i].content.push(temp);
+                  }
+                  break;
+              }
+          }
+      });
+
+      ipc.on('addNew', (event,arg) => {
+         vue.Maintain_msg.push({
+             name: arg,
+             content:[],
+             numOfUnread: 0
+         })
+      });
+
+
+      ipc.on('delete', (event,arg) => {
+          const id = arg.id;
+          vue.window_msg = deleteByID(vue.window_msg, id);
+      });
+
+
+  </script>
+
+
+  </body>
+
+
+<script>
+    const name =  localStorage.getItem("name");
+
+    // Vue component template
+    Vue.component('bubble', bubble);
+    Vue.component('unread', unread);
+
+   const vue =  new Vue({
+        el: '#app',
+        data () {
+            return {
+                me: name,               // Me
+                cur_selection: null,    // Selection title
+                message:"",             // InputBox
+                data_msg: null,
+                window_msg: null,       // Window bubble
+                window_object: null,
+                hasNew: null,
+                Maintain_msg: [],       // data = {name: 'xxx',  content: {}}
+
+            }
+        },
+       methods: {
+            loadData: function(){
+                axios
+                    .get("https://wechats3.herokuapp.com/" + name)
+                    .then(data => this.split(data))
+            },
+
+            split: function(response) {
+                const info = response.data.list;
+                for (let i = 0; i < info.length; i++) {
+                    if(info[i] != this.me){
+                        const temp = {
+                            name: info[i],
+                            content:[],
+                            numOfUnread: 0
+                        };
+                        this.Maintain_msg.push(temp);
+                    }
+                }
+            },
+
+            select: function (ev,name) {
+                this.cur_selection = name;
+                const msg = this.Maintain_msg;
+
+                for (let i = 0; i < msg.length; i++) {
+                    if(msg[i].name == name){
+                        this.window_msg = msg[i].content;
+                        this.Maintain_msg[i].numOfUnread = 0;
+                        break;
+                    }
+                    if(i == msg.length -1){
+                        this.window_msg = null;
+                    }
+                }
+                this.color = 'grey';
+
+            },
+
+            send: function(){
+                const sendingMessage = this.message;
+                const bundle = {
+                    sender: this.me,
+                    to: this.cur_selection,
+                    msg: this.message
+                };
+
+                ipc.send('send', bundle);
+                this.message="";
+            },
+
+            point: function(e, id){
+                ipc.send('right-click', id);
+            },
+
+           video: function () {
+                ipc.send('video', this.cur_selection);
+           },
+
+           testing: function () {
+               ipc.send('testing', this.cur_selection);
+           },
+
+        },
+        mounted () {
+            this.loadData();
+        }
+    })
+
+
+</script>
+
+
+</html>

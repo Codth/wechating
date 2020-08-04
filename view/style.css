@@ -1,0 +1,64 @@
+html,body { height: 100%; margin: 0px; padding: 0px; }
+.part{height: 100% }
+
+#header{
+    height: 9%;
+    border-bottom: grey 1px solid;
+}
+
+#content{
+    height: 67%;
+    overflow-y: scroll;
+    border-bottom: grey 1px solid;
+    padding-top: 20px;
+}
+
+#textbox{
+    height: 24%
+}
+
+#list{
+    border-right: grey 1px solid;
+}
+
+.name-card{
+    height: 8%;
+    border-bottom: grey 1px solid;
+    text-align: left;
+    padding-left: 10px;
+    color: black;
+}
+
+.name-card:hover {
+    background-color: gainsboro;
+}
+
+.isSelected{
+    height: 8%;
+    border-bottom: grey 1px solid;
+    text-align: left;
+    padding-left: 10px;
+    color: black;
+    background-color: gainsboro;
+}
+
+
+.bubble-inside{
+    width: fit-content;
+    background: white;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px;
+}
+
+
+.isMe{
+    margin-right: 27px;
+    float: right;
+    background-color: mediumseagreen;
+}
+
+.mainList{
+    overflow-y: scroll;
+    height: 93%;
+}
